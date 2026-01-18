@@ -15,82 +15,35 @@ export interface ScrapedContent {
   scrapedAt: Date
 }
 
-// 是否使用真实API（通过环境变量控制）
-const USE_REAL_API = import.meta.env?.VITE_USE_REAL_API === 'true'
-
 export class ContentScraper {
   /**
    * 抓取小红书帖子内容
-   * 注意：由于浏览器环境限制，这里使用模拟数据
-   * 实际部署时，应该在 EdgeOne Node Functions 中实现
+   * 调用EdgeOne API Functions进行真实内容抓取
    */
   static async scrapeContent(postId: string): Promise<ScrapedContent> {
     Logger.logUserAction('抓取内容', { postId })
 
     try {
-      // 如果配置了使用真实API，则调用后端
-      if (USE_REAL_API) {
-        Logger.info('使用真实API抓取内容')
-        
-        try {
-          // 添加超时控制（5秒）
-          const timeoutPromise = new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error('API请求超时')), 5000)
-          })
+      Logger.info('调用真实API抓取内容')
+      
+      // 添加超时控制（10秒）
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('API请求超时（10秒），请检查EdgeOne API Functions是否部署成功')), 10000)
+      })
 
-          const apiPromise = ApiClient.post<{
-            title: string
-            content: string
-            images: string[]
-            postId: string
-            scrapedAt: string
-          }>('/scrape-content', { postId })
+      const apiPromise = ApiClient.post<{
+        title: string
+        content: string
+        images: string[]
+        postId: string
+        scrapedAt: string
+      }>('/scrape-content', { postId })
 
-          const data = await Promise.race([apiPromise, timeoutPromise])
-
-          const content: ScrapedContent = {
-            ...data,
-            scrapedAt: new Date(data.scrapedAt),
-          }
-
-          // 验证内容完整性
-          if (!this.validateContent(content)) {
-            throw new Error('抓取的内容不完整')
-          }
-
-          Logger.info('内容抓取成功（真实API）', { 
-            postId, 
-            imageCount: content.images.length,
-            titleLength: content.title.length,
-            contentLength: content.content.length
-          })
-
-          return content
-        } catch (apiError) {
-          // API调用失败，降级到模拟数据
-          Logger.warn('真实API调用失败，使用模拟数据', { error: apiError })
-          console.warn('⚠️ API调用失败，使用模拟数据:', apiError)
-          console.warn('⚠️ 请检查EdgeOne控制台：')
-          console.warn('   1. API Functions是否部署成功')
-          console.warn('   2. 环境变量ZHIPU_API_KEY是否配置')
-          console.warn('   3. 路由配置是否正确')
-        }
-      }
-
-      // 使用模拟数据（开发阶段或API失败时）
-      Logger.info('使用模拟数据')
-      await new Promise(resolve => setTimeout(resolve, 800))
+      const data = await Promise.race([apiPromise, timeoutPromise])
 
       const content: ScrapedContent = {
-        title: '夏日清爽穿搭分享 | 简约又时尚',
-        content: '今天给大家分享一套超级适合夏天的穿搭！\n\n白色T恤搭配牛仔短裤，简单又清爽。\n\n配上一双小白鞋，整体look非常干净利落。\n\n这套穿搭的重点是要选择合身的版型，这样才能穿出好身材。\n\n姐妹们可以试试看哦！',
-        images: [
-          'https://picsum.photos/400/400?random=1',
-          'https://picsum.photos/400/400?random=2',
-          'https://picsum.photos/400/400?random=3',
-        ],
-        postId,
-        scrapedAt: new Date(),
+        ...data,
+        scrapedAt: new Date(data.scrapedAt),
       }
 
       // 验证内容完整性
@@ -98,7 +51,7 @@ export class ContentScraper {
         throw new Error('抓取的内容不完整')
       }
 
-      Logger.info('内容抓取成功（模拟数据）', { 
+      Logger.info('内容抓取成功', { 
         postId, 
         imageCount: content.images.length,
         titleLength: content.title.length,
@@ -111,6 +64,15 @@ export class ContentScraper {
         error instanceof Error ? error : new Error('未知错误'),
         ErrorType.NETWORK
       )
+      
+      // 输出详细错误信息
+      console.error('❌ 内容抓取失败:', appError.message)
+      console.error('请检查EdgeOne控制台：')
+      console.error('  1. API Functions是否部署成功')
+      console.error('  2. 环境变量ZHIPU_API_KEY是否配置')
+      console.error('  3. 路由配置是否正确')
+      console.error('  4. 查看EdgeOne部署日志')
+      
       throw new Error(appError.message)
     }
   }

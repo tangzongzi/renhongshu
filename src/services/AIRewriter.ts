@@ -5,7 +5,6 @@
 
 import { Logger } from '../utils/logger'
 import { ApiClient } from './apiClient'
-import { ContentValidator } from '../utils/contentValidator'
 
 export interface RewrittenContent {
   title: string
@@ -14,9 +13,6 @@ export interface RewrittenContent {
   originalTitle: string
   originalContent: string
 }
-
-// 是否使用真实API（通过环境变量控制）
-const USE_REAL_API = (import.meta as any).env?.VITE_USE_REAL_API === 'true'
 
 export class AIRewriter {
   /**
@@ -32,137 +28,46 @@ export class AIRewriter {
     })
 
     try {
-      // 如果配置了使用真实API，则调用后端
-      if (USE_REAL_API) {
-        Logger.info('使用真实AI API改写')
-        
-        try {
-          // 添加超时控制（8秒）
-          const timeoutPromise = new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error('AI API请求超时')), 8000)
-          })
+      Logger.info('调用真实AI API改写')
+      
+      // 添加超时控制（15秒）
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('AI API请求超时（15秒），请检查EdgeOne API Functions和智谱AI配置')), 15000)
+      })
 
-          const apiPromise = ApiClient.post<RewrittenContent>('/rewrite', {
-            title,
-            content,
-          })
+      const apiPromise = ApiClient.post<RewrittenContent>('/rewrite', {
+        title,
+        content,
+      })
 
-          const data = await Promise.race([apiPromise, timeoutPromise])
-
-          // 验证改写结果
-          const validation = this.validateRewrittenContent(data)
-          if (!validation.valid) {
-            Logger.warn('改写内容验证失败', { errors: validation.errors })
-            throw new Error(`内容验证失败: ${validation.errors.join(', ')}`)
-          }
-
-          Logger.info('AI改写成功（真实API）', { 
-            titleLength: data.title.length,
-            contentLength: data.content.length,
-            tagCount: data.tags.length
-          })
-
-          return data
-        } catch (apiError) {
-          // API调用失败，降级到模拟改写
-          Logger.warn('真实API调用失败，使用模拟改写', { error: apiError })
-          console.warn('⚠️ AI API调用失败，使用降级方案:', apiError)
-        }
-      }
-
-      // 使用模拟数据（开发阶段或API失败时）
-      Logger.info('使用模拟AI改写')
-      await new Promise(resolve => setTimeout(resolve, 2000))
-
-      const rewrittenTitle = this.simulateRewrite(title)
-      const rewrittenContent = this.simulateRewrite(content)
-      const tags = this.generateTags(content)
-
-      const result: RewrittenContent = {
-        title: rewrittenTitle,
-        content: rewrittenContent,
-        tags,
-        originalTitle: title,
-        originalContent: content,
-      }
+      const data = await Promise.race([apiPromise, timeoutPromise])
 
       // 验证改写结果
-      const validation = ContentValidator.validateAll(
-        result.title,
-        result.content,
-        result.tags
-      )
-      
+      const validation = this.validateRewrittenContent(data)
       if (!validation.valid) {
         Logger.warn('改写内容验证失败', { errors: validation.errors })
         throw new Error(`内容验证失败: ${validation.errors.join(', ')}`)
       }
 
-      if (validation.warnings.length > 0) {
-        Logger.warn('改写内容有警告', { warnings: validation.warnings })
-      }
-
-      Logger.info('AI改写成功（模拟数据）', { 
-        titleLength: result.title.length,
-        contentLength: result.content.length,
-        tagCount: result.tags.length
+      Logger.info('AI改写成功', { 
+        titleLength: data.title.length,
+        contentLength: data.content.length,
+        tagCount: data.tags.length
       })
 
-      return result
+      return data
     } catch (error) {
-      Logger.error('AI改写失败，使用降级方案', { error })
-      // 降级方案：使用简单的同义词替换
-      return this.fallbackRewrite(title, content)
-    }
-  }
-
-  /**
-   * 模拟AI改写（开发阶段使用）
-   */
-  private static simulateRewrite(text: string): string {
-    // 简单的文本变换模拟
-    const synonyms: Record<string, string> = {
-      '这是': '这里是',
-      '原始': '初始',
-      '内容': '素材',
-      '标题': '题目',
-      '文案': '文字',
-    }
-
-    let result = text
-    Object.entries(synonyms).forEach(([key, value]) => {
-      result = result.replace(new RegExp(key, 'g'), value)
-    })
-
-    return result
-  }
-
-  /**
-   * 生成相关标签
-   */
-  private static generateTags(_content: string): string[] {
-    // 简单的关键词提取模拟
-    const keywords = ['美食', '旅行', '生活', '分享', '推荐']
-    
-    // 随机选择2-4个标签
-    const count = Math.floor(Math.random() * 3) + 2
-    const shuffled = keywords.sort(() => 0.5 - Math.random())
-    return shuffled.slice(0, count)
-  }
-
-  /**
-   * 降级方案：简单的同义词替换
-   */
-  private static fallbackRewrite(
-    title: string,
-    content: string
-  ): RewrittenContent {
-    return {
-      title: this.simulateRewrite(title),
-      content: this.simulateRewrite(content),
-      tags: ['生活', '分享'],
-      originalTitle: title,
-      originalContent: content,
+      Logger.error('AI改写失败', { error })
+      
+      // 输出详细错误信息
+      console.error('❌ AI改写失败:', error)
+      console.error('请检查EdgeOne控制台：')
+      console.error('  1. API Functions是否部署成功')
+      console.error('  2. 环境变量ZHIPU_API_KEY是否配置正确')
+      console.error('  3. 智谱AI API Key是否有效')
+      console.error('  4. 查看EdgeOne部署日志')
+      
+      throw error
     }
   }
 

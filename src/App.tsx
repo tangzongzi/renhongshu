@@ -48,7 +48,12 @@ function App() {
       setCurrentPage('preview')
     } catch (error) {
       console.error('处理链接失败:', error)
-      throw error
+      
+      // 显示错误信息
+      alert(`❌ 内容抓取失败\n\n${error instanceof Error ? error.message : '未知错误'}\n\n请检查：\n1. EdgeOne API Functions是否部署成功\n2. 环境变量是否配置正确\n3. 小红书链接是否有效\n\n详细信息请查看浏览器控制台（F12）`)
+      
+      // 返回输入页面
+      setCurrentPage('input')
     }
   }
 
