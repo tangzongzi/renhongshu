@@ -36,28 +36,34 @@ export class AIRewriter {
       if (USE_REAL_API) {
         Logger.info('使用真实AI API改写')
         
-        const data = await ApiClient.post<RewrittenContent>('/rewrite', {
-          title,
-          content,
-        })
+        try {
+          const data = await ApiClient.post<RewrittenContent>('/rewrite', {
+            title,
+            content,
+          })
 
-        // 验证改写结果
-        const validation = this.validateRewrittenContent(data)
-        if (!validation.valid) {
-          Logger.warn('改写内容验证失败', { errors: validation.errors })
-          throw new Error(`内容验证失败: ${validation.errors.join(', ')}`)
+          // 验证改写结果
+          const validation = this.validateRewrittenContent(data)
+          if (!validation.valid) {
+            Logger.warn('改写内容验证失败', { errors: validation.errors })
+            throw new Error(`内容验证失败: ${validation.errors.join(', ')}`)
+          }
+
+          Logger.info('AI改写成功（真实API）', { 
+            titleLength: data.title.length,
+            contentLength: data.content.length,
+            tagCount: data.tags.length
+          })
+
+          return data
+        } catch (apiError) {
+          // API调用失败，降级到模拟改写
+          Logger.warn('真实API调用失败，使用模拟改写', { error: apiError })
+          console.warn('AI API调用失败，使用降级方案:', apiError)
         }
-
-        Logger.info('AI改写成功（真实API）', { 
-          titleLength: data.title.length,
-          contentLength: data.content.length,
-          tagCount: data.tags.length
-        })
-
-        return data
       }
 
-      // 使用模拟数据（开发阶段）
+      // 使用模拟数据（开发阶段或API失败时）
       Logger.info('使用模拟AI改写')
       await new Promise(resolve => setTimeout(resolve, 2000))
 

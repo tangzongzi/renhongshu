@@ -32,41 +32,47 @@ export class ContentScraper {
       if (USE_REAL_API) {
         Logger.info('使用真实API抓取内容')
         
-        const data = await ApiClient.post<{
-          title: string
-          content: string
-          images: string[]
-          postId: string
-          scrapedAt: string
-        }>('/scrape-content', { postId })
+        try {
+          const data = await ApiClient.post<{
+            title: string
+            content: string
+            images: string[]
+            postId: string
+            scrapedAt: string
+          }>('/scrape-content', { postId })
 
-        const content: ScrapedContent = {
-          ...data,
-          scrapedAt: new Date(data.scrapedAt),
+          const content: ScrapedContent = {
+            ...data,
+            scrapedAt: new Date(data.scrapedAt),
+          }
+
+          // 验证内容完整性
+          if (!this.validateContent(content)) {
+            throw new Error('抓取的内容不完整')
+          }
+
+          Logger.info('内容抓取成功（真实API）', { 
+            postId, 
+            imageCount: content.images.length,
+            titleLength: content.title.length,
+            contentLength: content.content.length
+          })
+
+          return content
+        } catch (apiError) {
+          // API调用失败，降级到模拟数据
+          Logger.warn('真实API调用失败，使用模拟数据', { error: apiError })
+          console.warn('API调用失败，使用模拟数据:', apiError)
         }
-
-        // 验证内容完整性
-        if (!this.validateContent(content)) {
-          throw new Error('抓取的内容不完整')
-        }
-
-        Logger.info('内容抓取成功（真实API）', { 
-          postId, 
-          imageCount: content.images.length,
-          titleLength: content.title.length,
-          contentLength: content.content.length
-        })
-
-        return content
       }
 
-      // 使用模拟数据（开发阶段）
+      // 使用模拟数据（开发阶段或API失败时）
       Logger.info('使用模拟数据')
       await new Promise(resolve => setTimeout(resolve, 1500))
 
       const content: ScrapedContent = {
-        title: '这是从小红书抓取的原始标题',
-        content: '这是从小红书抓取的原始文案内容。\n\n包含了详细的描述信息，可能有多个段落。\n\n这里是第三段内容。',
+        title: '【演示】这是模拟的小红书标题',
+        content: '这是模拟的内容数据。\n\n真实环境需要部署EdgeOne Functions后才能抓取真实内容。\n\n当前使用演示数据供您测试功能。',
         images: [
           'https://via.placeholder.com/400x400?text=Image+1',
           'https://via.placeholder.com/400x400?text=Image+2',
