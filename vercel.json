@@ -1,32 +1,9 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/dist/$1"
-    }
-  ],
   "functions": {
     "api/**/*.ts": {
       "runtime": "nodejs18.x",
       "memory": 1024,
       "maxDuration": 30
     }
-  },
-  "env": {
-    "ZHIPU_API_KEY": "@zhipu_api_key"
   }
 }
