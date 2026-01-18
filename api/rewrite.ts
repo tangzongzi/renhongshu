@@ -24,10 +24,28 @@ interface ResponseData {
 }
 
 export default async function handler(request: Request): Promise<Response> {
+  // 处理CORS预检请求
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    })
+  }
+
   if (request.method !== 'POST') {
     return new Response(
       JSON.stringify({ success: false, error: 'Method not allowed' }),
-      { status: 405, headers: { 'Content-Type': 'application/json' } }
+      { 
+        status: 405, 
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        } 
+      }
     )
   }
 
@@ -38,7 +56,13 @@ export default async function handler(request: Request): Promise<Response> {
     if (!title || !content) {
       return new Response(
         JSON.stringify({ success: false, error: '标题和内容不能为空' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 400, 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          } 
+        }
       )
     }
 
@@ -121,7 +145,10 @@ export default async function handler(request: Request): Promise<Response> {
 
     return new Response(JSON.stringify(responseData), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      },
     })
   } catch (error) {
     console.error('AI改写失败:', error)
@@ -167,6 +194,9 @@ function fallbackRewrite(title: string, content: string): Response {
 
   return new Response(JSON.stringify(responseData), {
     status: 200,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+    },
   })
 }

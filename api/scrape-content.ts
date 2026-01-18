@@ -23,10 +23,28 @@ interface ResponseData {
 }
 
 export default async function handler(request: Request): Promise<Response> {
+  // 处理CORS预检请求
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    })
+  }
+
   if (request.method !== 'POST') {
     return new Response(
       JSON.stringify({ success: false, error: 'Method not allowed' }),
-      { status: 405, headers: { 'Content-Type': 'application/json' } }
+      { 
+        status: 405, 
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        } 
+      }
     )
   }
 
@@ -37,7 +55,13 @@ export default async function handler(request: Request): Promise<Response> {
     if (!postId) {
       return new Response(
         JSON.stringify({ success: false, error: '帖子ID不能为空' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 400, 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          } 
+        }
       )
     }
 
@@ -93,7 +117,10 @@ export default async function handler(request: Request): Promise<Response> {
 
     return new Response(JSON.stringify(responseData), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      },
     })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : '内容抓取失败'
@@ -104,7 +131,13 @@ export default async function handler(request: Request): Promise<Response> {
         error: errorMessage,
         trackingId: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { 
+        status: 500, 
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        } 
+      }
     )
   }
 }
