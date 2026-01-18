@@ -37,10 +37,17 @@ export class AIRewriter {
         Logger.info('使用真实AI API改写')
         
         try {
-          const data = await ApiClient.post<RewrittenContent>('/rewrite', {
+          // 添加超时控制（8秒）
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('AI API请求超时')), 8000)
+          })
+
+          const apiPromise = ApiClient.post<RewrittenContent>('/rewrite', {
             title,
             content,
           })
+
+          const data = await Promise.race([apiPromise, timeoutPromise])
 
           // 验证改写结果
           const validation = this.validateRewrittenContent(data)
@@ -59,7 +66,7 @@ export class AIRewriter {
         } catch (apiError) {
           // API调用失败，降级到模拟改写
           Logger.warn('真实API调用失败，使用模拟改写', { error: apiError })
-          console.warn('AI API调用失败，使用降级方案:', apiError)
+          console.warn('⚠️ AI API调用失败，使用降级方案:', apiError)
         }
       }
 

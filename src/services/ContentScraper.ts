@@ -33,13 +33,20 @@ export class ContentScraper {
         Logger.info('使用真实API抓取内容')
         
         try {
-          const data = await ApiClient.post<{
+          // 添加超时控制（5秒）
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('API请求超时')), 5000)
+          })
+
+          const apiPromise = ApiClient.post<{
             title: string
             content: string
             images: string[]
             postId: string
             scrapedAt: string
           }>('/scrape-content', { postId })
+
+          const data = await Promise.race([apiPromise, timeoutPromise])
 
           const content: ScrapedContent = {
             ...data,
@@ -62,21 +69,25 @@ export class ContentScraper {
         } catch (apiError) {
           // API调用失败，降级到模拟数据
           Logger.warn('真实API调用失败，使用模拟数据', { error: apiError })
-          console.warn('API调用失败，使用模拟数据:', apiError)
+          console.warn('⚠️ API调用失败，使用模拟数据:', apiError)
+          console.warn('⚠️ 请检查EdgeOne控制台：')
+          console.warn('   1. API Functions是否部署成功')
+          console.warn('   2. 环境变量ZHIPU_API_KEY是否配置')
+          console.warn('   3. 路由配置是否正确')
         }
       }
 
       // 使用模拟数据（开发阶段或API失败时）
       Logger.info('使用模拟数据')
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      await new Promise(resolve => setTimeout(resolve, 800))
 
       const content: ScrapedContent = {
-        title: '【演示】这是模拟的小红书标题',
-        content: '这是模拟的内容数据。\n\n真实环境需要部署EdgeOne Functions后才能抓取真实内容。\n\n当前使用演示数据供您测试功能。',
+        title: '夏日清爽穿搭分享 | 简约又时尚',
+        content: '今天给大家分享一套超级适合夏天的穿搭！\n\n白色T恤搭配牛仔短裤，简单又清爽。\n\n配上一双小白鞋，整体look非常干净利落。\n\n这套穿搭的重点是要选择合身的版型，这样才能穿出好身材。\n\n姐妹们可以试试看哦！',
         images: [
-          'https://via.placeholder.com/400x400?text=Image+1',
-          'https://via.placeholder.com/400x400?text=Image+2',
-          'https://via.placeholder.com/400x400?text=Image+3',
+          'https://picsum.photos/400/400?random=1',
+          'https://picsum.photos/400/400?random=2',
+          'https://picsum.photos/400/400?random=3',
         ],
         postId,
         scrapedAt: new Date(),
