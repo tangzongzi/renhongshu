@@ -1,0 +1,49 @@
+{
+  "$schema": "https://edgeone.ai/schema.json",
+  "name": "xiaohongshu-auto-publisher",
+  "version": "1.0.0",
+  "description": "小红书自动发布工具 - 基于EdgeOne的免费部署方案",
+  "build": {
+    "command": "npm run build",
+    "output": "dist"
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "functions": {
+    "api/**/*.ts": {
+      "runtime": "nodejs18.x",
+      "memory": 256,
+      "timeout": 10
+    }
+  },
+  "env": {
+    "ZHIPU_API_KEY": "@zhipu_api_key"
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type"
+        }
+      ]
+    }
+  ]
+}
