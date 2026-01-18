@@ -28,28 +28,24 @@ function App() {
       setLoadingProgress(0)
       setLoadingSteps([])
       
-      // 模拟加载步骤
-      setTimeout(() => {
-        setLoadingSteps(['解析链接完成'])
-        setLoadingProgress(33)
-      }, 500)
+      // 优化加载步骤
+      setLoadingSteps(['解析链接完成'])
+      setLoadingProgress(33)
       
-      setTimeout(() => {
-        setLoadingSteps(['解析链接完成', '获取标题和文案'])
-        setLoadingProgress(66)
-      }, 1000)
+      await new Promise(resolve => setTimeout(resolve, 300))
       
-      setTimeout(() => {
-        setLoadingSteps(['解析链接完成', '获取标题和文案', '下载图片中...'])
-        setLoadingProgress(100)
-      }, 1500)
+      setLoadingSteps(['解析链接完成', '获取内容'])
+      setLoadingProgress(66)
       
       const content = await ContentScraper.scrapeContent(parsed.postId)
       setOriginalContent(content)
       
-      setTimeout(() => {
-        setCurrentPage('preview')
-      }, 2000)
+      setLoadingSteps(['解析链接完成', '获取内容', '加载完成'])
+      setLoadingProgress(100)
+      
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      setCurrentPage('preview')
     } catch (error) {
       console.error('处理链接失败:', error)
       throw error
