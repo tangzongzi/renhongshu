@@ -7,23 +7,35 @@
     "command": "npm run build",
     "output": "dist"
   },
+  "functions": {
+    "api/*.ts": {
+      "runtime": "nodejs18.x",
+      "memory": 256,
+      "timeout": 30
+    }
+  },
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
+      "src": "/api/test",
+      "dest": "/api/test.ts"
+    },
+    {
+      "src": "/api/scrape-content",
+      "dest": "/api/scrape-content.ts"
+    },
+    {
+      "src": "/api/rewrite",
+      "dest": "/api/rewrite.ts"
+    },
+    {
+      "src": "/api/parse-link",
+      "dest": "/api/parse-link.ts"
     },
     {
       "src": "/(.*)",
       "dest": "/index.html"
     }
   ],
-  "functions": {
-    "api/**/*.ts": {
-      "runtime": "nodejs18.x",
-      "memory": 256,
-      "timeout": 10
-    }
-  },
   "env": {
     "ZHIPU_API_KEY": "@zhipu_api_key"
   },
